@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano de Viagem - SEAD AP</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Rawline:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sead: {
+                            blue: '#0B2545',
+                            lightBlue: '#134074',
+                            accent: '#EE6C4D',
+                            yellow: '#F4B400',
+                            bg: '#EEF4F8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        gov: ['Rawline', 'Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Libs para Geração de PDF e Anexos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #f1f5f9;
+        }
+        /* Estilização Moderna para o PDF */
+        .modern-pdf-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 6px;
+            background-color: #ffffff;
+        }
+        .modern-pdf-table th, .modern-pdf-table td {
+            border-bottom: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            font-size: 10px;
+            line-height: 1.3;
+            vertical-align: top;
+        }
+        .modern-pdf-table tr:last-child td {
+            border-bottom: none;
+        }
+        .modern-header-bg {
+            background-color: #0B2545;
+            color: #ffffff;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 10.5px;
+            letter-spacing: 0.8px;
+            padding: 7px 10px;
+            border-bottom: 2px solid #F59E0B;
+        }
+        .official-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #64748b;
+            display: block;
+            margin-bottom: 2px;
+            letter-spacing: 0.4px;
+        }
+        .official-value {
+            font-size: 10px;
+            font-weight: 600;
+            color: #0f172a;
+            min-height: 14px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans flex flex-col">
+
+    <!-- TELA DE CARREGAMENTO (SPINNER) -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[9999] flex flex-col items-center justify-center hidden">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl flex flex-col items-center max-w-sm w-full mx-4 border border-slate-200">
+            <div class="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <h3 class="text-base font-bold text-slate-900 uppercase tracking-wide">Gerando Documento</h3>
+            <p class="text-xs text-slate-600 text-center mt-1">Por favor, aguarde enquanto o PDF oficial e os anexos são processados...</p>
+        </div>
+    </div>
+
+    <!-- HEADER INSTITUCIONAL -->
+    <header class="bg-slate-900 text-white border-b-4 border-amber-500 shadow-md no-print w-full">
+        <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <div class="bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30 shadow-sm flex items-center justify-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/Bras%C3%A3o_do_Amap%C3%A1.svg" alt="Brasão do Amapá" class="h-12 w-auto" onerror="this.src='https://placehold.co/80x80/0B2545/FFFFFF?text=SEAD'">
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-amber-400 tracking-wider uppercase">Governo do Estado do Amapá</span>
+                    <h1 class="text-xl font-extrabold tracking-tight">Secretaria de Estado da Administração — SEAD</h1>
+                    <div class="mt-1 inline-block bg-slate-900/60 border border-amber-500/40 px-2.5 py-0.5 rounded-full shadow-inner">
+                        <p class="text-xs font-bold text-amber-300 tracking-wide uppercase flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-pen text-amber-400 text-[10px]"></i> Requisição de Viagem — Plano de Viagem
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="loadSampleData()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Preencher Exemplo
+                </button>
+                <button type="button" onclick="clearForm()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-eraser"></i> Limpar
+                </button>
+                <button type="button" onclick="togglePreviewModal()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm border border-slate-700">
+                    <i class="fa-solid fa-eye text-amber-400"></i> Visualizar PDF
+                </button>
+                <button type="button" onclick="generatePDF()" class="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-file-pdf"></i> Gerar PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- FORMULÁRIO PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full no-print">
+        <form id="travelForm" onsubmit="event.preventDefault(); generatePDF();" class="space-y-6">
+            
+            <!-- 1. DADOS DO BENEFICIÁRIO -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-gear text-amber-500"></i> DO BENEFICIÁRIO
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo *</label>
+                        <input type="text" id="nome" required oninput="syncPDF()" placeholder="Ex: MARCOS DA SILVA PEREIRA" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">CPF *</label>
+                        <input type="text" id="cpf" required oninput="formatCPF(this); syncPDF();" placeholder="000.000.000-00" maxlength="14" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <span id="cpfError" class="text-[11px] text-rose-600 font-semibold hidden mt-1">CPF inválido. Verifique os números.</span>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cargo / Função *</label>
+                        <input type="text" id="cargo" required oninput="syncPDF()" placeholder="Ex: ANALISTA ADMINISTRATIVO / ASSESSOR TÉCNICO NÍVEL I" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Órgão / Setor Lotação *</label>
+                        <input type="text" id="lotacao" required oninput="syncPDF()" placeholder="Ex: SEAD / UFIN" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Banco *</label>
+                        <input type="text" id="banco" required oninput="syncPDF()" placeholder="Ex: BANCO DO BRASIL" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Agência *</label>
+                        <input type="text" id="agencia" required oninput="syncPDF()" placeholder="Ex: 1234-5" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Conta Corrente / Pagamento *</label>
+                        <input type="text" id="conta" required oninput="syncPDF()" placeholder="Ex: 12345-6" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. DADOS DO DESLOCAMENTO E VALORES -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plane-departure text-amber-500"></i> DO DESLOCAMENTO
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Origem (Cidade / UF) *</label>
+                        <input type="text" id="origem" required oninput="syncPDF()" placeholder="Ex: MACAPÁ / AP" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Destino (Cidade / UF) *</label>
+                        <input type="text" id="destino" required oninput="syncPDF()" placeholder="Ex: JOÃO PESSOA / PB" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data de Saída *</label>
+                        <input type="date" id="dataSaida" required onchange="onSaidaChange(); calculateDiarias(); syncPDF();" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data de Retorno *</label>
+                        <input type="date" id="dataRetorno" required onchange="calculateDiarias(); syncPDF();" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                        <span id="retornoError" class="text-[11px] text-rose-600 font-semibold hidden mt-1">A data de retorno deve ser igual ou posterior à data de saída.</span>
+                    </div>
+
+                    <div class="md:col-span-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Modalidade da Diária *</label>
+                        <div class="flex flex-wrap gap-4 text-xs font-semibold">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="modalidade" value="Estadual" onchange="onModalidadeChange(); syncPDF();" class="text-amber-500 focus:ring-amber-500"> Estadual
+                            </label>
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="modalidade" value="Nacional" checked onchange="onModalidadeChange(); syncPDF();" class="text-amber-500 focus:ring-amber-500"> Nacional
+                            </label>
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" name="modalidade" value="Internacional" onchange="onModalidadeChange(); syncPDF();" class="text-amber-500 focus:ring-amber-500"> Internacional
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd de Diárias *</label>
+                        <input type="number" step="0.5" id="qtdDiarias" required oninput="calculateTotal(); syncPDF();" placeholder="Ex: 1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold bg-amber-50 text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Unitário (R$) *</label>
+                        <input type="number" step="0.01" id="valorUnitario" required oninput="calculateTotal(); syncPDF();" placeholder="Ex: 450.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-bold focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div class="md:col-start-4">
+                        <label class="block text-xs font-bold text-amber-900 uppercase mb-1">Valor Total Estimado (R$)</label>
+                        <input type="text" id="valorTotal" readonly placeholder="R$ 0,00" class="w-full px-3 py-2 border border-amber-300 rounded-lg text-sm font-extrabold bg-amber-50 text-amber-950">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. QUESTIONÁRIO REGULAMENTAR (SIM/NÃO) -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-clipboard-question text-amber-500"></i> CONDIÇÕES E REQUISITOS REGULAMENTARES
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">Duração da viagem superior a 06 horas?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_duracao" value="Sim" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_duracao" value="Não" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">Os municípios de deslocamento são limítrofes ou integrantes de região metropolitana?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_limitrofes" value="Sim" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_limitrofes" value="Não" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">Há custeio de alimentação/pousada por instituição terceira?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_custeio" value="Sim" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_custeio" value="Não" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">Haverá fornecimento de alojamento público?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_alojamento" value="Sim" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_alojamento" value="Não" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">A viagem é superior a 15 (quinze) dias?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_quinze" value="Sim" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_quinze" value="Não" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center justify-between gap-3">
+                        <span class="font-medium text-slate-700">Existe prestação de contas de diárias anteriores pendente?</span>
+                        <div class="flex gap-3 font-bold shrink-0">
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_pendencia" value="Sim" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Sim</label>
+                            <label class="inline-flex items-center gap-1 cursor-pointer"><input type="radio" name="q_pendencia" value="Não" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Não</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. MEIO DE TRANSPORTE E EVENTO -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-route text-amber-500"></i> MEIO DE TRANSPORTE E INSTITUIÇÃO / EVENTO
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-2">Meio de Transporte *</label>
+                        <div class="flex gap-4 text-xs font-semibold bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                            <label class="cursor-pointer"><input type="radio" name="transporte" value="Terrestre" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Terrestre</label>
+                            <label class="cursor-pointer"><input type="radio" name="transporte" value="Fluvial" onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Fluvial</label>
+                            <label class="cursor-pointer"><input type="radio" name="transporte" value="Aérea" checked onchange="syncPDF()" class="text-amber-500 focus:ring-amber-500"> Aérea</label>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Instituição Visitada / Evento / Órgão *</label>
+                        <input type="text" id="evento" required oninput="syncPDF()" placeholder="Ex: ESAFI / ENCONTRO NACIONAL DE GESTÃO PÚBLICA" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. DOCUMENTOS COMPROBATÓRIOS E ANEXO DE MÚLTIPLOS ARQUIVOS -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paperclip text-amber-500"></i> DOCUMENTOS COMPROBATÓRIOS DA VIAGEM
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Descrição dos Documentos Comprobatórios</label>
+                        <input type="text" id="docDescricao" oninput="syncPDF()" placeholder="Ex: Carta Convite, Programação Oficial ou Ofício" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Anexar Múltiplos Arquivos (PDF ou Imagem)</label>
+                        <input type="file" id="docArquivos" accept="application/pdf, image/*" multiple onchange="handleFileUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-800 hover:file:bg-amber-100">
+                    </div>
+                </div>
+
+                <div id="fileListContainer" class="hidden mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                    <span class="text-xs font-bold text-slate-700 uppercase block mb-1">Arquivos Anexados:</span>
+                    <div id="filesListItems" class="space-y-1.5"></div>
+                </div>
+            </div>
+
+            <!-- 6. JUSTIFICATIVA E FINALIDADE -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-align-center text-amber-500"></i> JUSTIFICATIVA / FINALIDADE DO DESLOCAMENTO
+                </h2>
+
+                <textarea id="justificativa" rows="5" required oninput="syncPDF()" placeholder="Digite ou cole aqui textos longos..." class="w-full p-3 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase"></textarea>
+            </div>
+
+            <!-- 7. CHEFIA IMEDIATA E ASSINATURA DIGITAL -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                <h2 class="text-base font-bold text-slate-900 uppercase tracking-wide border-b pb-3 mb-4 text-center flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-pen-nib text-amber-500"></i> CHEFE IMEDIATO E ASSINATURA
+                </h2>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data da Anuência *</label>
+                        <input type="date" id="dataAnuencia" required onchange="syncPDF()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome da Chefia Imediata *</label>
+                        <input type="text" id="nomeChefia" required oninput="syncPDF()" placeholder="DIGITE O NOME DO CHEFE IMEDIATO" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Cargo da Chefia Imediata *</label>
+                        <input type="text" id="cargoChefia" required oninput="syncPDF()" placeholder="DIGITE O CARGO DA CHEFIA" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none uppercase">
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-bold text-slate-700 uppercase">Rubrica / Assinatura Digital da Chefia (Opcional)</label>
+                        <button type="button" onclick="clearSignature()" class="text-xs text-rose-600 hover:underline"><i class="fa-solid fa-eraser"></i> Limpar Assinatura</button>
+                    </div>
+                    <div class="bg-white border border-slate-300 rounded-lg overflow-hidden flex justify-center">
+                        <canvas id="signatureCanvas" width="500" height="90" class="cursor-crosshair w-full max-w-md touch-none bg-white"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTÃO DE SUBMISSÃO FINAL -->
+            <div class="flex justify-end gap-3 pt-2 pb-10">
+                <button type="button" onclick="togglePreviewModal()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-sm transition shadow-sm border border-slate-700">
+                    <i class="fa-solid fa-eye text-amber-400 mr-2"></i> Pré-visualizar Documento
+                </button>
+                <button type="submit" class="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold rounded-xl text-sm transition shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-file-pdf text-base"></i> Gerar PDF
+                </button>
+            </div>
+
+        </form>
+    </main>
+
+    <!-- MODAL DE PRÉ-VISUALIZAÇÃO -->
+    <div id="previewModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-6xl w-full shadow-2xl flex flex-col max-h-[92vh] overflow-hidden border border-slate-300">
+            <div class="bg-slate-900 text-white px-6 py-4 flex items-center justify-between border-b border-amber-500">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-file-lines text-amber-400"></i> Pré-visualização do Plano de Viagem
+                </h3>
+                <button onclick="togglePreviewModal()" class="text-slate-300 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto bg-slate-200 flex flex-col items-center flex-1 gap-4">
+                <div id="render-target-container" class="bg-white p-6 shadow-xl border border-slate-300 w-[280mm] min-h-[190mm] text-black">
+                </div>
+            </div>
+
+            <div class="bg-slate-100 px-6 py-3 border-t border-slate-300 flex justify-between items-center">
+                <span class="text-xs text-slate-500 font-medium">Os arquivos anexados serão mesclados automaticamente no PDF final baixado.</span>
+                <div class="flex gap-2">
+                    <button onclick="togglePreviewModal()" class="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-800 text-xs font-bold rounded-lg transition">
+                        Fechar
+                    </button>
+                    <button onclick="generatePDF()" class="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition shadow">
+                        <i class="fa-solid fa-download mr-1"></i> Baixar PDF Completo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEMPLATE DO PLANO DE VIAGEM -->
+    <div id="pdf-source-html" style="display: none;">
+        <div style="width: 270mm; padding: 4mm; background: #ffffff; margin: 0 auto; font-family: 'Inter', sans-serif;">
+            
+            <!-- Cabeçalho Principal -->
+            <table class="modern-pdf-table" style="margin-bottom: 8px;">
+                <tr>
+                    <td style="width: 22%; text-align: center; vertical-align: middle; background-color: #f8fafc; border-top-left-radius: 6px; border-bottom-left-radius: 6px;">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/3/30/Bras%C3%A3o_do_Amap%C3%A1.svg" alt="Brasão AP" style="max-height: 38px; margin: 0 auto;" onerror="this.style.display='none'">
+                        <div style="font-size: 7px; font-weight: 700; color: #0B2545; margin-top: 3px; line-height: 1.1;">GOVERNO DO ESTADO<br>DO AMAPÁ</div>
+                    </td>
+                    <td style="width: 56%; text-align: center; vertical-align: middle; background-color: #ffffff;">
+                        <h2 style="font-size: 15px; font-weight: 800; color: #0B2545; margin: 0; text-transform: uppercase; letter-spacing: 1.2px;">PLANO DE VIAGEM</h2>
+                        <div style="font-size: 8px; font-weight: 700; color: #1e293b; margin-top: 3px; text-transform: uppercase; letter-spacing: 0.5px;">DOCUMENTO OFICIAL DE REQUISIÇÃO DE VIAGEM / DIÁRIAS</div>
+                        <div style="font-size: 7px; color: #64748b; margin-top: 2px; font-weight: 600;">(Conforme Decreto Nº 1450/2022 e Decreto Nº 1744/2008)</div>
+                    </td>
+                    <td style="width: 22%; text-align: center; vertical-align: middle; background-color: #f8fafc; border-top-right-radius: 6px; border-bottom-right-radius: 6px;">
+                        <div style="font-size: 7.5px; font-weight: 700; color: #0B2545; line-height: 1.2;">SECRETARIA DE ESTADO DA<br>ADMINISTRAÇÃO</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 1: Beneficiário -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td colspan="7" class="modern-header-bg"><i class="fa-solid fa-user-gear mr-1"></i> 1. Dados do Beneficiário</td>
+                </tr>
+                <tr>
+                    <td style="width: 26%;">
+                        <span class="official-label">Nome Completo</span>
+                        <div class="pdf_nome official-value">-</div>
+                    </td>
+                    <td style="width: 20%;">
+                        <span class="official-label">Cargo / Função</span>
+                        <div class="pdf_cargo official-value">-</div>
+                    </td>
+                    <td style="width: 20%;">
+                        <span class="official-label">Órgão / Lotação</span>
+                        <div class="pdf_lotacao official-value">-</div>
+                    </td>
+                    <td style="width: 14%;">
+                        <span class="official-label">CPF</span>
+                        <div class="pdf_cpf official-value">-</div>
+                    </td>
+                    <td style="width: 8%;">
+                        <span class="official-label">Banco</span>
+                        <div class="pdf_banco official-value">-</div>
+                    </td>
+                    <td style="width: 6%;">
+                        <span class="official-label">Agência</span>
+                        <div class="pdf_agencia official-value">-</div>
+                    </td>
+                    <td style="width: 6%;">
+                        <span class="official-label">Conta</span>
+                        <div class="pdf_conta official-value">-</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 2: Deslocamento -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td colspan="8" class="modern-header-bg"><i class="fa-solid fa-plane-departure mr-1"></i> 2. Dados do Deslocamento e Custos</td>
+                </tr>
+                <tr>
+                    <td style="width: 16%;">
+                        <span class="official-label">Origem (Cidade / UF)</span>
+                        <div class="pdf_origem official-value">-</div>
+                    </td>
+                    <td style="width: 16%;">
+                        <span class="official-label">Destino (Cidade / UF)</span>
+                        <div class="pdf_destino official-value">-</div>
+                    </td>
+                    <td style="width: 10%;">
+                        <span class="official-label">Saída</span>
+                        <div class="pdf_saida official-value">-</div>
+                    </td>
+                    <td style="width: 10%;">
+                        <span class="official-label">Retorno</span>
+                        <div class="pdf_retorno official-value">-</div>
+                    </td>
+                    <td style="width: 16%;">
+                        <span class="official-label">Modalidade</span>
+                        <div class="pdf_modalidade_selected official-value" style="color: #0B2545; font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 8%; text-align: center;">
+                        <span class="official-label">Qtd Diárias</span>
+                        <div class="pdf_qtd official-value" style="text-align: center;">-</div>
+                    </td>
+                    <td style="width: 12%;">
+                        <span class="official-label">Valor Unitário</span>
+                        <div class="pdf_vunit official-value">-</div>
+                    </td>
+                    <td style="width: 12%;">
+                        <span class="official-label">Valor Total</span>
+                        <div class="pdf_vtotal official-value" style="color: #0B2545; font-weight: 800;">-</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 3: Requisitos Regulamentares -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td colspan="6" class="modern-header-bg"><i class="fa-solid fa-clipboard-question mr-1"></i> 3. Condições e Requisitos Regulamentares</td>
+                </tr>
+                <tr>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Duração > 06h?</span>
+                        <div class="pdf_q_duracao_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Municípios Limítrofes?</span>
+                        <div class="pdf_q_limitrofes_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Custeio por Terceiro?</span>
+                        <div class="pdf_q_custeio_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Alojamento Público?</span>
+                        <div class="pdf_q_alojamento_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Viagem > 15 Dias?</span>
+                        <div class="pdf_q_quinze_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 16.6%;">
+                        <span class="official-label">Prestação Pendente?</span>
+                        <div class="pdf_q_pendencia_val official-value" style="font-weight: 700;">-</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 4: Transporte e Evento -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td style="width: 25%;">
+                        <span class="official-label">Meio de Transporte</span>
+                        <div class="pdf_transporte_selected official-value" style="color: #0B2545; font-weight: 700;">-</div>
+                    </td>
+                    <td style="width: 75%;">
+                        <span class="official-label">Instituição Visitada / Evento / Órgão</span>
+                        <div class="pdf_evento official-value">-</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 5: Documento Comprobatório -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td colspan="2" class="modern-header-bg"><i class="fa-solid fa-paperclip mr-1"></i> 5. Documentos Comprobatórios da Viagem</td>
+                </tr>
+                <tr>
+                    <td style="width: 60%; padding: 6px;">
+                        <span class="official-label">Descrição dos Documentos Comprobatórios</span>
+                        <div class="pdf_doc_descricao official-value" style="font-weight: 700; color: #0B2545;">Nenhum documento detalhado.</div>
+                    </td>
+                    <td style="width: 40%; padding: 6px;">
+                        <span class="official-label">Arquivos Anexados</span>
+                        <div class="pdf_doc_arquivo_nome official-value" style="font-weight: 700;">Nenhum arquivo anexado.</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 6: Justificativa -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td class="modern-header-bg"><i class="fa-solid fa-align-center mr-1"></i> 6. Justificativa / Finalidade do Deslocamento</td>
+                </tr>
+                <tr>
+                    <td style="vertical-align: top; padding: 8px; background-color: #fafafa;">
+                        <div class="pdf_justificativa" style="font-size: 9.5px; line-height: 1.4; text-align: justify; white-space: pre-wrap; word-break: break-word; min-height: 35px; color: #334155;">-</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Seção 7: Chefia Imediata e Observações -->
+            <table class="modern-pdf-table">
+                <tr>
+                    <td style="width: 50%;" class="modern-header-bg"><i class="fa-solid fa-pen-nib mr-1"></i> 7. Chefia Imediata e Anuência</td>
+                    <td style="width: 50%;" class="modern-header-bg"><i class="fa-solid fa-circle-exclamation mr-1"></i> Observações Legais</td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; vertical-align: top; padding: 8px;">
+                        <p style="font-size: 8px; text-align: justify; margin-bottom: 8px; line-height: 1.3; color: #475569;">
+                            Na qualidade de chefia imediata, manifesto anuência ao pedido e atesto que o deslocamento pretendido é de interesse da Administração Pública. Confirmo que a solicitação está em conformidade com as necessidades do setor.
+                        </p>
+                        
+                        <div style="margin-top: 8px; font-size: 8.5px; color: #334155;">
+                            Em, <span class="pdf_data_anuencia" style="font-weight: 700;">____/____/________</span>
+                        </div>
+
+                        <div style="margin-top: 18px; text-align: center; border-top: 1px solid #94a3b8; padding-top: 4px;">
+                            <div class="pdf_signature_img" style="height: 28px; display: flex; align-items: center; justify-content: center; margin-bottom: -4px;"></div>
+                            <div class="pdf_nome_chefia" style="font-size: 8.5px; font-weight: 700; text-transform: uppercase; color: #0B2545;">NOME DA CHEFIA</div>
+                            <div class="pdf_cargo_chefia" style="font-size: 8px; font-weight: 600; text-transform: uppercase; color: #475569; margin-top: 1px;">CARGO DA CHEFIA</div>
+                        </div>
+                    </td>
+
+                    <td style="width: 50%; vertical-align: top; padding: 8px; background-color: #f8fafc;">
+                        <ul style="font-size: 7.5px; text-align: justify; padding-left: 12px; margin: 0; line-height: 1.3; color: #475569;" class="space-y-1">
+                            <li>
+                                <strong>DIÁRIAS NACIONAIS (Território Estadual ou Nacional):</strong> No prazo de <strong>05 (cinco) dias úteis</strong>, é obrigatória a prestação de contas após o retorno ou a restituição de diárias indevidas após a notificação (Arts. 7º e 8º, § único, Decreto nº 1450/2022).
+                            </li>
+                            <li style="margin-top: 4px;">
+                                <strong>DIÁRIAS INTERNACIONAIS:</strong> Obrigatória a prestação de contas e restituição no prazo de <strong>03 (três) dias úteis</strong> subsequentes ao retorno (Art. 8º, Decreto nº 1744/2008).
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- SCRIPT DA APLICAÇÃO -->
+    <script>
+        const canvas = document.getElementById('signatureCanvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        
+        let attachedFiles = [];
+
+        function initCanvas() {
+            ctx.strokeStyle = "#000000";
+            ctx.lineWidth = 2;
+            ctx.lineCap = "round";
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+
+            canvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                isDrawing = true;
+                ctx.beginPath();
+                ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                e.preventDefault();
+            });
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDrawing) return;
+                const touch = e.touches[0];
+                const rect = canvas.getBoundingClientRect();
+                ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+                ctx.stroke();
+                e.preventDefault();
+            });
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                isDrawing = false;
+                syncPDF();
+            }
+        }
+
+        function clearSignature() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            syncPDF();
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            if (files && files.length > 0) {
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        attachedFiles.push({
+                            file: file,
+                            bytes: e.target.result,
+                            type: file.type.includes('pdf') ? 'pdf' : 'image',
+                            name: file.name
+                        });
+                        updateFilesUI();
+                        syncPDF();
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+        }
+
+        function removeFile(index) {
+            attachedFiles.splice(index, 1);
+            updateFilesUI();
+            syncPDF();
+        }
+
+        function updateFilesUI() {
+            const container = document.getElementById('fileListContainer');
+            const listItems = document.getElementById('filesListItems');
+            listItems.innerHTML = '';
+
+            if (attachedFiles.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            attachedFiles.forEach((item, index) => {
+                const isPdf = item.type === 'pdf';
+                const iconClass = isPdf ? 'fa-solid fa-file-pdf text-rose-600' : 'fa-solid fa-file-image text-emerald-600';
+                
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between text-xs bg-white p-2 rounded border border-slate-200 shadow-sm";
+                div.innerHTML = `
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="${iconClass} text-sm"></i>
+                        <span class="font-bold text-slate-700 truncate">${item.name}</span>
+                    </div>
+                    <button type="button" onclick="removeFile(${index})" class="text-rose-600 hover:text-rose-800 font-semibold px-2"><i class="fa-solid fa-trash"></i></button>
+                `;
+                listItems.appendChild(div);
+            });
+        }
+
+        function clearAllFiles() {
+            attachedFiles = [];
+            document.getElementById('docArquivos').value = '';
+            updateFilesUI();
+            syncPDF();
+        }
+
+        function validarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]+/g, '');
+            if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+            let soma = 0;
+            for (let i = 1; i <= 9; i++) soma += parseInt(cpf.substring(i - 1, i)) * (11 - i);
+            let resto = (soma * 10) % 11;
+            if ((resto === 10) || (resto === 11)) resto = 0;
+            if (resto !== parseInt(cpf.substring(9, 10))) return false;
+            soma = 0;
+            for (let i = 1; i <= 10; i++) soma += parseInt(cpf.substring(i - 1, i)) * (12 - i);
+            resto = (soma * 10) % 11;
+            if ((resto === 10) || (resto === 11)) resto = 0;
+            if (resto !== parseInt(cpf.substring(10, 11))) return false;
+            return true;
+        }
+
+        function formatCPF(input) {
+            let value = input.value.replace(/\D/g, "");
+            value = value.replace(/(\d{3})(\d)/, "$1.$2");
+            value = value.replace(/(\d{3})(\d)/, "$1.$2");
+            value = value.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+            input.value = value;
+
+            const errorSpan = document.getElementById('cpfError');
+            if (value.length === 14) {
+                if (!validarCPF(value)) {
+                    errorSpan.classList.remove('hidden');
+                    input.classList.add('border-rose-500');
+                } else {
+                    errorSpan.classList.add('hidden');
+                    input.classList.remove('border-rose-500');
+                }
+            } else {
+                errorSpan.classList.add('hidden');
+                input.classList.remove('border-rose-500');
+            }
+        }
+
+        function onSaidaChange() {
+            const dataSaida = document.getElementById('dataSaida').value;
+            const dataRetornoInput = document.getElementById('dataRetorno');
+            if (dataSaida) {
+                dataRetornoInput.min = dataSaida;
+                if (!dataRetornoInput.value || dataRetornoInput.value < dataSaida) {
+                    dataRetornoInput.value = dataSaida;
+                }
+            }
+        }
+
+        function onModalidadeChange() {
+            const mod = document.querySelector('input[name="modalidade"]:checked')?.value;
+            const valorInput = document.getElementById('valorUnitario');
+
+            if (mod === 'Estadual') {
+                valorInput.value = '220.00';
+                valorInput.readOnly = true;
+                valorInput.classList.add('bg-slate-100');
+            } else if (mod === 'Nacional') {
+                valorInput.value = '450.00';
+                valorInput.readOnly = true;
+                valorInput.classList.add('bg-slate-100');
+            } else if (mod === 'Internacional') {
+                valorInput.readOnly = false;
+                valorInput.classList.remove('bg-slate-100');
+            }
+            calculateTotal();
+            syncPDF();
+        }
+
+        function calculateDiarias() {
+            const d1 = document.getElementById('dataSaida').value;
+            const d2 = document.getElementById('dataRetorno').value;
+            const errorSpan = document.getElementById('retornoError');
+            const retornoInput = document.getElementById('dataRetorno');
+
+            if (d1 && d2) {
+                if (d2 < d1) {
+                    errorSpan.classList.remove('hidden');
+                    retornoInput.classList.add('border-rose-500');
+                    document.getElementById('qtdDiarias').value = '';
+                    document.getElementById('valorTotal').value = 'R$ 0,00';
+                    syncPDF();
+                    return;
+                } else {
+                    errorSpan.classList.add('hidden');
+                    retornoInput.classList.remove('border-rose-500');
+                }
+
+                const date1 = new Date(d1 + 'T00:00:00');
+                const date2 = new Date(d2 + 'T00:00:00');
+                const diffTime = date2 - date1;
+                const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= 0) {
+                    document.getElementById('qtdDiarias').value = diffDays + 1;
+                }
+            } else {
+                errorSpan.classList.add('hidden');
+                retornoInput.classList.remove('border-rose-500');
+            }
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            const qtd = parseFloat(document.getElementById('qtdDiarias').value) || 0;
+            const unit = parseFloat(document.getElementById('valorUnitario').value) || 0;
+            const total = qtd * unit;
+
+            document.getElementById('valorTotal').value = total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
+        function formatDateBR(dateStr) {
+            if (!dateStr) return "-";
+            const parts = dateStr.split('-');
+            if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            return dateStr;
+        }
+
+        function syncPDF() {
+            updateClassText('pdf_nome', document.getElementById('nome').value.toUpperCase() || '-');
+            updateClassText('pdf_cargo', document.getElementById('cargo').value.toUpperCase() || '-');
+            updateClassText('pdf_lotacao', document.getElementById('lotacao').value.toUpperCase() || '-');
+            updateClassText('pdf_cpf', document.getElementById('cpf').value || '-');
+            updateClassText('pdf_banco', document.getElementById('banco').value.toUpperCase() || '-');
+            updateClassText('pdf_agencia', document.getElementById('agencia').value.toUpperCase() || '-');
+            updateClassText('pdf_conta', document.getElementById('conta').value.toUpperCase() || '-');
+
+            updateClassText('pdf_origem', document.getElementById('origem').value.toUpperCase() || '-');
+            updateClassText('pdf_destino', document.getElementById('destino').value.toUpperCase() || '-');
+            updateClassText('pdf_saida', formatDateBR(document.getElementById('dataSaida').value));
+            updateClassText('pdf_retorno', formatDateBR(document.getElementById('dataRetorno').value));
+
+            const mod = document.querySelector('input[name="modalidade"]:checked')?.value;
+            updateClassText('pdf_modalidade_selected', mod ? mod.toUpperCase() : '-');
+
+            updateClassText('pdf_qtd', document.getElementById('qtdDiarias').value || '0');
+            const unitVal = parseFloat(document.getElementById('valorUnitario').value) || 0;
+            updateClassText('pdf_vunit', unitVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+            updateClassText('pdf_vtotal', document.getElementById('valorTotal').value || 'R$ 0,00');
+
+            updateClassText('pdf_q_duracao_val', getRadioValue('q_duracao'));
+            updateClassText('pdf_q_limitrofes_val', getRadioValue('q_limitrofes'));
+            updateClassText('pdf_q_custeio_val', getRadioValue('q_custeio'));
+            updateClassText('pdf_q_alojamento_val', getRadioValue('q_alojamento'));
+            updateClassText('pdf_q_quinze_val', getRadioValue('q_quinze'));
+            updateClassText('pdf_q_pendencia_val', getRadioValue('q_pendencia'));
+
+            const tra = document.querySelector('input[name="transporte"]:checked')?.value;
+            updateClassText('pdf_transporte_selected', tra ? tra.toUpperCase() : '-');
+
+            updateClassText('pdf_evento', document.getElementById('evento').value.toUpperCase() || '-');
+            
+            const justificativaTexto = document.getElementById('justificativa').value.toUpperCase() || '-';
+            updateClassText('pdf_justificativa', justificativaTexto);
+
+            const descDoc = document.getElementById('docDescricao').value.trim();
+            updateClassText('pdf_doc_descricao', descDoc ? descDoc.toUpperCase() : 'NENHUM DOCUMENTO DESCRITIVO INFORMADO.');
+            
+            if (attachedFiles.length > 0) {
+                const names = attachedFiles.map(f => f.name).join(', ');
+                updateClassText('pdf_doc_arquivo_nome', `${attachedFiles.length} ARQUIVO(S): ${names.toUpperCase()}`);
+            } else {
+                updateClassText('pdf_doc_arquivo_nome', 'NENHUM ARQUIVO ANEXADO.');
+            }
+
+            updateClassText('pdf_data_anuencia', formatDateBR(document.getElementById('dataAnuencia').value));
+            updateClassText('pdf_nome_chefia', document.getElementById('nomeChefia').value.toUpperCase() || 'NOME DA CHEFIA');
+            updateClassText('pdf_cargo_chefia', document.getElementById('cargoChefia').value.toUpperCase() || 'CARGO DA CHEFIA');
+
+            const isCanvasBlank = !ctx.getImageData(0, 0, canvas.width, canvas.height).data.some(channel => channel !== 0);
+            const sigHTML = !isCanvasBlank ? `<img src="${canvas.toDataURL()}" style="max-height: 28px;">` : '';
+            
+            document.querySelectorAll('.pdf_signature_img').forEach(el => el.innerHTML = sigHTML);
+        }
+
+        function updateClassText(className, value) {
+            document.querySelectorAll('.' + className).forEach(el => el.innerText = value);
+        }
+
+        function getRadioValue(name) {
+            const el = document.querySelector(`input[name="${name}"]:checked`);
+            return el ? el.value.toUpperCase() : '-';
+        }
+
+        function loadSampleData() {
+            document.getElementById('nome').value = "MARCOS DA SILVA PEREIRA";
+            document.getElementById('cpf').value = "111.444.777-35";
+            document.getElementById('cargo').value = "ANALISTA ADMINISTRATIVO / ASSESSOR TÉCNICO NÍVEL I";
+            document.getElementById('lotacao').value = "SEAD / UFIN";
+            document.getElementById('banco').value = "BANCO DO BRASIL";
+            document.getElementById('agencia').value = "1234-5";
+            document.getElementById('conta').value = "12345-6";
+
+            document.getElementById('origem').value = "MACAPÁ / AP";
+            document.getElementById('destino').value = "JOÃO PESSOA / PB";
+            document.getElementById('dataSaida').value = "2026-11-08";
+            document.getElementById('dataRetorno').value = "2026-11-08";
+            onSaidaChange();
+            calculateDiarias();
+
+            document.querySelector('input[name="modalidade"][value="Nacional"]').checked = true;
+            onModalidadeChange();
+
+            document.getElementById('evento').value = "ESAFI / ENCONTRO NACIONAL DE GESTÃO PÚBLICA";
+            document.getElementById('docDescricao').value = "CARTA CONVITE OFICIAL E PROGRAMAÇÃO DO EVENTO - ANEXO SEI Nº 45123/2026";
+            document.getElementById('justificativa').value = "PARTICIPAÇÃO IMPRESCINDÍVEL NA CAPACITAÇÃO E TREINAMENTO EM PROCEDIMENTOS OPERACIONAIS PADRÃO, LICITAÇÕES, CONTRATOS E GESTÃO FINANCEIRA ESTADUAL. O EVENTO REÚNE GESTORES DE TODO O PAÍS PARA ALINHAR DIRETRIZES DE EXECUÇÃO ORÇAMENTÁRIA, PRESTAÇÃO DE CONTAS E MODERNIZAÇÃO DOS SERVIÇOS PÚBLICOS, SENDO DE TOTAL INTERESSE DA SECRETARIA DE ESTADO DA ADMINISTRAÇÃO.";
+
+            document.getElementById('dataAnuencia').value = "2026-10-20";
+            document.getElementById('nomeChefia').value = "CARLOS EDUARDO SOUZA";
+            document.getElementById('cargoChefia').value = "DIRETOR DE GESTÃO DE PESSOAS";
+
+            calculateTotal();
+            syncPDF();
+        }
+
+        function clearForm() {
+            document.getElementById('travelForm').reset();
+            clearSignature();
+            clearAllFiles();
+            document.querySelector('input[name="modalidade"][value="Nacional"]').checked = true;
+            onModalidadeChange();
+            calculateTotal();
+            syncPDF();
+        }
+
+        function togglePreviewModal() {
+            syncPDF();
+            const modal = document.getElementById('previewModal');
+            const target = document.getElementById('render-target-container');
+
+            if (modal.classList.contains('hidden')) {
+                target.innerHTML = '';
+                const sourceHtml = document.getElementById('pdf-source-html').children[0];
+                target.appendChild(sourceHtml.cloneNode(true));
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        async function generatePDF() {
+            const cpfVal = document.getElementById('cpf').value;
+            if (!validarCPF(cpfVal)) {
+                alert("Atenção: O CPF inserido é inválido. Por favor, insira um CPF real para continuar.");
+                document.getElementById('cpf').focus();
+                return;
+            }
+
+            const d1 = document.getElementById('dataSaida').value;
+            const d2 = document.getElementById('dataRetorno').value;
+            if (d1 && d2 && d2 < d1) {
+                alert("Atenção: A data de retorno não pode ser anterior à data de saída.");
+                document.getElementById('dataRetorno').focus();
+                return;
+            }
+
+            // Exibe a tela de carregamento
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.classList.remove('hidden');
+
+            syncPDF();
+
+            let modalWasHidden = false;
+            const modal = document.getElementById('previewModal');
+            const targetContainer = document.getElementById('render-target-container');
+
+            if (modal.classList.contains('hidden')) {
+                modalWasHidden = true;
+                targetContainer.innerHTML = '';
+                const sourceHtml = document.getElementById('pdf-source-html').children[0];
+                targetContainer.appendChild(sourceHtml.cloneNode(true));
+                modal.classList.remove('hidden');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            const elementToCapture = targetContainer.children[0];
+            const nomeBeneficiario = document.getElementById('nome').value.trim().replaceAll(' ', '_') || 'BENEFICIARIO';
+            const filename = `PLANO_DE_VIAGEM_${nomeBeneficiario}.pdf`;
+
+            try {
+                const canvasRendered = await html2canvas(elementToCapture, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                if (modalWasHidden) {
+                    modal.classList.add('hidden');
+                }
+
+                const imgData = canvasRendered.toDataURL('image/jpeg', 0.98);
+
+                const { jsPDF } = window.jspdf;
+                const pdfDocJs = new jsPDF('landscape', 'mm', 'a4');
+                pdfDocJs.addImage(imgData, 'JPEG', 5, 5, 287, 200);
+
+                const pdfBaseArrayBuffer = pdfDocJs.output('arraybuffer');
+
+                if (attachedFiles.length === 0) {
+                    const blob = new Blob([pdfBaseArrayBuffer], { type: 'application/pdf' });
+                    downloadBlob(blob, filename);
+                    loadingOverlay.classList.add('hidden');
+                    return;
+                }
+
+                const { PDFDocument } = PDFLib;
+                const basePdfDoc = await PDFDocument.load(pdfBaseArrayBuffer);
+
+                for (let item of attachedFiles) {
+                    if (item.type === 'pdf') {
+                        const attachmentPdfDoc = await PDFDocument.load(item.bytes);
+                        const copiedPages = await basePdfDoc.copyPages(attachmentPdfDoc, attachmentPdfDoc.getPageIndices());
+                        copiedPages.forEach(page => basePdfDoc.addPage(page));
+                    } else if (item.type === 'image') {
+                        const newPage = basePdfDoc.addPage([841.89, 595.28]);
+                        let embeddedImg;
+
+                        if (item.file.type.includes('png')) {
+                            embeddedImg = await basePdfDoc.embedPng(item.bytes);
+                        } else {
+                            embeddedImg = await basePdfDoc.embedJpg(item.bytes);
+                        }
+
+                        const { width, height } = embeddedImg.scale(1);
+                        const maxWidth = 800;
+                        const maxHeight = 500;
+                        const scaleFactor = Math.min(maxWidth / width, maxHeight / height, 1);
+
+                        const finalWidth = width * scaleFactor;
+                        const finalHeight = height * scaleFactor;
+
+                        newPage.drawImage(embeddedImg, {
+                            x: (841.89 - finalWidth) / 2,
+                            y: (595.28 - finalHeight) / 2,
+                            width: finalWidth,
+                            height: finalHeight,
+                        });
+                    }
+                }
+
+                const mergedPdfBytes = await basePdfDoc.save();
+                const finalBlob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+                downloadBlob(finalBlob, filename);
+
+            } catch (err) {
+                console.error('Erro na geração do PDF:', err);
+                if (modalWasHidden) modal.classList.add('hidden');
+                alert('Ocorreu um erro ao gerar o documento. Tente novamente.');
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        function downloadBlob(blob, filename) {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            onModalidadeChange();
+        });
+    </script>
+</body>
+</html>
